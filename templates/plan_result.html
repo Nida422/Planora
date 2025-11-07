@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="fw-bold" id="title-trip">
+      Trip Plan — {{ trip_info.destination }}
+      ({{ trip_info.days }} day{{ 's' if trip_info.days > 1 else '' }})
+    </h2>
+
+    <div class="d-flex align-items-center gap-3">
+      <!-- 🌐 Language Selector -->
+      <select id="langSelect" class="form-select form-select-sm" style="width:auto;">
+        <option value="en" selected>English</option>
+        <option value="hi">हिन्दी</option>
+        <option value="fr">Français</option>
+        <option value="es">Español</option>
+        <option value="de">Deutsch</option>
+      </select>
+
+      <a class="btn btn-outline-secondary" id="btn-another" href="{{ url_for('plan_trip') }}">
+        Plan Another Trip
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- LEFT SIDE -->
+    <div class="col-lg-8">
+      {% for day in trip_info.daily_plan %}
+      <div class="card mb-4 shadow-sm fade-in">
+        <div class="card-header bg-light fw-bold">{{ day.day }}</div>
+        <div class="card-body">
+          <div class="row">
+            {% for place in day.places %}
+            <div class="col-md-6 mb-3">
+              <div class="hover-card">
+                <img src="{{ place.image or url_for('static', filename='placeholder.jpg') }}" alt="{{ place.name }}">
+                <div class="p-2">
+                  <h6>{{ place.name }}</h6>
+                  <small class="text-muted">{{ place.address }}</small>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="text-muted mt-2"><i>{{ day.budget_tip }}</i></p>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="text-center my-4">
+        <button id="showMapBtn" class="btn btn-primary btn-lg fw-bold">
+          🌍 View Suggested Places on Map
+        </button>
+      </div>
+
+      <div id="mapContainer" class="fade-in" style="display:none;">
+        <div id="map" style="height:600px; border-radius:12px;" class="shadow-sm"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="col-lg-4">
+      <div class="card mb-3 p-3 shadow-sm">
+        <h5 id="label-destination">Destination</h5>
+        <p><strong>{{ trip_info.destination }}</strong><br>
+        Coordinates: {{ trip_info.lat }}, {{ trip_info.lon }}</p>
+        <p id="label-triptype">Trip Type: {{ trip_info.trip_type }}</p>
+        <p id="label-preferences">Preferences: {{ trip_info.preferences }}</p>
+      </div>
+
+       <div class="card mb-3 p-3 shadow-sm">
+        <h5 id="label-emergency">Nearby Emergency Services</h5>
+
+         {% for s in trip_info.nearby %}
+          <li class="list-group-item">
+            <strong>{{ s.type }}:</strong> {{ s.name }}<br>
+            <small>{{ s.address }}</small><br>
+            {% if s.contact %}📞 {{ s.contact }}{% endif %}
+          </li>
+          {% endfor %}
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ✅ LEAFLET + ROUTING SCRIPTS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<script>
+window.addEventListener("load", function() {
+  let map;
+  const lat = {{ trip_info.lat or 28.6139 }};
+  const lon = {{ trip_info.lon or 77.2090 }};
+  const apiKey = "b62963e3cfcf43a9a7f22ac117efdf36"; // your Geoapify key
+
+  document.getElementById("showMapBtn").addEventListener("click", () => {
+    document.getElementById("mapContainer").style.display = "block";
+    initMap(document.getElementById("langSelect").value);
+  });
+
+  function initMap(lang) {
+    if (map) { map.remove(); }
+
+    map = L.map('map').setView([lat, lon], 12);
+    L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${apiKey}&lang=${lang}`, {
+      attribution: '&copy; OpenStreetMap, Geoapify'
+    }).addTo(map);
+
+    const waypoints = [];
+
+    {% if trip_info.from_lat and trip_info.from_lon %}
+      const startMarker = L.marker([{{ trip_info.from_lat }}, {{ trip_info.from_lon }}])
+        .addTo(map)
+        .bindPopup("Starting Point");
+      waypoints.push(L.latLng({{ trip_info.from_lat }}, {{ trip_info.from_lon }}));
+    {% endif %}
+
+    const destMarker = L.marker([lat, lon])
+      .addTo(map)
+      .bindPopup("{{ trip_info.destination }} (Destination)");
+    waypoints.push(L.latLng(lat, lon));
+
+    {% for day in trip_info.daily_plan %}
+      {% for place in day.places %}
+        {% if place.lat and place.lon %}
+          // 🧭 Only declare the marker inline, not with 'const'
+          L.marker([{{ place.lat }}, {{ place.lon }}])
+            .addTo(map)
+            .bindPopup(`<b>{{ place.name }}</b><br>{{ place.address }}`);
+          waypoints.push(L.latLng({{ place.lat }}, {{ place.lon }}));
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+
+    if (waypoints.length > 1) {
+      L.Routing.control({
+        waypoints: waypoints,
+        routeWhileDragging: false,
+        addWaypoints: false,
+        draggableWaypoints: false,
+        createMarker: () => null
+      }).addTo(map);
+    }
+
+    // ✅ SOS markers
+    {% for s in trip_info.nearby %}
+      {% if s.latitude and s.longitude %}
+        L.marker([{{ s.latitude }}, {{ s.longitude }}], {
+          icon: L.icon({
+            iconUrl: "{{ 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png' if 'hospital' in s.type.lower() else 'https://cdn-icons-png.flaticon.com/512/1828/1828843.png' }}",
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+          })
+        })
+        .addTo(map)
+        .bindPopup(`<b>{{ s.name }}</b><br>{{ s.type }}<br>{{ s.address }}<br>{% if s.contact %}📞 {{ s.contact }}{% endif %}`);
+      {% endif %}
+    {% endfor %}
+  }
+
+  // 🌐 Multi-language translations
+  const translations = {
+    hi: {
+      "Trip Plan": "यात्रा योजना",
+      "Plan Another Trip": "एक और यात्रा की योजना बनाएं",
+      "Destination": "गंतव्य",
+      "Trip Type:": "यात्रा प्रकार:",
+      "Preferences:": "वरीयताएँ:",
+      "Nearby Emergency Services": "निकटतम आपातकालीन सेवाएं",
+      "View Suggested Places on Map": "मानचित्र पर सुझाए गए स्थान देखें"
+    },
+    fr: {
+      "Trip Plan": "Plan de voyage",
+      "Plan Another Trip": "Planifier un autre voyage",
+      "Destination": "Destination",
+      "Trip Type:": "Type de voyage:",
+      "Preferences:": "Préférences:",
+      "Nearby Emergency Services": "Services d'urgence à proximité",
+      "View Suggested Places on Map": "Voir les lieux suggérés sur la carte"
+    },
+    es: {
+      "Trip Plan": "Plan de viaje",
+      "Plan Another Trip": "Planear otro viaje",
+      "Destination": "Destino",
+      "Trip Type:": "Tipo de viaje:",
+      "Preferences:": "Preferencias:",
+      "Nearby Emergency Services": "Servicios de emergencia cercanos",
+      "View Suggested Places on Map": "Ver lugares sugeridos en el mapa"
+    },
+    de: {
+      "Trip Plan": "Reiseplan",
+      "Plan Another Trip": "Eine weitere Reise planen",
+      "Destination": "Reiseziel",
+      "Trip Type:": "Reiseart:",
+      "Preferences:": "Vorlieben:",
+      "Nearby Emergency Services": "Nahegelegene Notdienste",
+      "View Suggested Places on Map": "Empfohlene Orte auf der Karte anzeigen"
+    }
+  };
+
+  document.getElementById("langSelect").addEventListener("change", (e) => {
+    const lang = e.target.value;
+    const t = translations[lang];
+    if (!t) return;
+    document.getElementById("title-trip").textContent = `${t["Trip Plan"]} — {{ trip_info.destination }}`;
+    document.getElementById("btn-another").textContent = t["Plan Another Trip"];
+    document.getElementById("label-destination").textContent = t["Destination"];
+    document.getElementById("label-triptype").textContent = `${t["Trip Type:"]} {{ trip_info.trip_type }}`;
+    document.getElementById("label-preferences").textContent = `${t["Preferences:"]} {{ trip_info.preferences }}`;
+    document.getElementById("label-emergency").textContent = t["Nearby Emergency Services"];
+    document.getElementById("showMapBtn").textContent = t["View Suggested Places on Map"];
+  });
+});
+</script>
+
+<style>
+.hover-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.hover-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+.hover-card:hover img { transform: scale(1.08); }
+.hover-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

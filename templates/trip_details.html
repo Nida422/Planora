@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="text-center mb-4">{{ trip.destination }} - Trip Details</h2>
+
+  <div class="card p-3 mb-4">
+    <h4>🌤 Weather</h4>
+    <p>Temperature: {{ weather.temperature }}°C</p>
+    <p>Condition: {{ weather.condition }}</p>
+    <p>Humidity: {{ weather.humidity }}%</p>
+  </div>
+
+  <div class="card p-3 mb-4">
+    <h4>📰 Latest News</h4>
+    <ul>
+      {% for article in news %}
+        <li><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></li>
+      {% else %}
+        <li>No recent news found.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="card p-3 mb-4">
+    <h4>📍 Tourist & Safe Places</h4>
+    <ul>
+      {% for place in places %}
+        <li><strong>{{ place.name }}</strong> - {{ place.formatted_address }}</li>
+      {% else %}
+        <li>No places found.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅ Back to Dashboard</a>
+</div>
+{% endblock %}

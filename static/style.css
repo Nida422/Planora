@@ -1,0 +1,26 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.sidebar {
+  height: 100vh;
+  transition: all 0.3s ease;
+}
+
+.sidebar.active {
+  margin-left: -250px;
+  opacity: 0;
+}
+
+.card {
+  border-radius: 10px;
+}
+
+.btn-close {
+  float: right;
+}

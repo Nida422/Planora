@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-primary text-white text-center rounded-top-4">
+          <h3 class="mb-0 fw-bold">Plan Your Perfect Trip</h3>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('plan_trip') }}">
+            <!-- From Location -->
+            <div class="mb-3">
+              <label for="from_location" class="form-label fw-semibold">Starting Location</label>
+              <input type="text" class="form-control form-control-lg" id="from_location" name="from_location" placeholder="e.g. New Delhi or allow browser location">
+              <small class="text-muted">Leave empty to use browser geolocation on result page.</small>
+            </div>
+
+            <!-- Destination -->
+            <div class="mb-3">
+              <label for="destination" class="form-label fw-semibold">Destination</label>
+              <input
+                type="text"
+                class="form-control form-control-lg"
+                id="destination"
+                name="destination"
+                placeholder="e.g. Paris, Bali, Tokyo"
+                required
+              >
+            </div>
+
+            <!-- Days -->
+            <div class="mb-3">
+              <label for="days" class="form-label fw-semibold">Number of Days</label>
+              <input type="number" min="1" max="14" class="form-control form-control-lg" id="days" name="days" value="1" required>
+            </div>
+
+            <!-- 🌍 Budget (Updated to levels) -->
+            <div class="mb-3">
+              <label for="budget" class="form-label fw-semibold">Select Your Budget</label>
+              <select class="form-select form-select-lg" id="budget" name="budget" required>
+                <option value="" disabled selected>Select your budget level</option>
+                <option value="low">Low (₹5,000 - ₹20,000)</option>
+                <option value="medium">Medium (₹20,000 - ₹70,000)</option>
+                <option value="high">High (₹70,000+)</option>
+              </select>
+              <small class="text-muted">Choose your overall spending range for this trip.</small>
+            </div>
+
+            <!-- Trip Type -->
+            <div class="mb-3">
+              <label for="trip_type" class="form-label fw-semibold">Trip Type</label>
+              <select class="form-select form-select-lg" id="trip_type" name="trip_type" required>
+                <option value="" disabled selected>Select trip type</option>
+                <option value="Adventure">Adventure</option>
+                <option value="Relaxation">Relaxation</option>
+                <option value="Romantic">Romantic</option>
+                <option value="Family">Family</option>
+                <option value="Fun">Fun</option>
+                <option value="Enjoyment">Enjoyment</option>
+              </select>
+            </div>
+
+            <!-- Preferences -->
+            <div class="mb-4">
+              <label for="preferences" class="form-label fw-semibold">Additional Preferences</label>
+              <textarea
+                class="form-control form-control-lg"
+                id="preferences"
+                name="preferences"
+                rows="3"
+                placeholder="e.g. I prefer easy hikes, museums, or local food..."
+              ></textarea>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid">
+              <button type="submit" class="btn btn-success btn-lg fw-bold">
+                <i class="bi bi-send me-2"></i>Get Trip Suggestions
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Back to Dashboard -->
+      <div class="text-center mt-4">
+        <a href="{{ url_for('dashboard') }}" class="text-decoration-none fw-semibold">
+          <i class="bi bi-arrow-left-circle me-1"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

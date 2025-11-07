@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex" id="wrapper">
+  <!-- Sidebar -->
+  <div class="border-end bg-white" id="sidebar-wrapper">
+    <div class="sidebar-heading border-bottom py-4 px-3 bg-primary text-white d-flex justify-content-between align-items-center">
+      <span class="fs-5 fw-bold">User Profile</span>
+      <button class="btn btn-sm btn-light" id="sidebarToggle"><i class="bi bi-list"></i></button>
+    </div>
+    <div class="list-group list-group-flush p-3">
+      <p><strong>Name:</strong> {{ user.name }}</p>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <p><strong>Location:</strong> {{ user.location }}</p>
+      <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-primary w-100 mt-2">Edit Profile</a>
+      <a href="{{ url_for('plan_trip') }}" class="btn btn-primary w-100 mt-3">Plan New Trip</a>
+      <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 mt-3">Logout</a>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div id="page-content-wrapper" class="w-100">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom shadow-sm">
+      <div class="container-fluid">
+        <button class="btn btn-outline-primary" id="menu-toggle"><i class="bi bi-list"></i></button>
+        <a class="navbar-brand fw-bold ms-3" href="#">🌍 Trip Dashboard</a>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link active fw-semibold" href="{{ url_for('dashboard') }}">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link fw-semibold" href="{{ url_for('plan_trip') }}">Plan Trip</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link fw-semibold text-danger" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid py-5 px-4">
+      <h2 class="fw-bold mb-4">Welcome, {{ user.name }}!</h2>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Trip Suggestions Section -->
+      {% if trip_info %}
+      <div class="mt-5">
+        <h3 class="text-primary">🌍 {{ trip_info.destination | capitalize }}</h3>
+
+        {% if trip_info.weather %}
+        <div class="alert alert-info">
+          <strong>Weather:</strong> {{ trip_info.weather.temp }}°C,
+          {{ trip_info.weather.condition }} |
+          Humidity: {{ trip_info.weather.humidity }}%
+        </div>
+        {% endif %}
+
+        <h4 class="mt-4">📸 Photos</h4>
+        <div class="row">
+          {% for photo in trip_info.photos %}
+          <div class="col-md-4 mb-3">
+            <img src="{{ photo }}" class="img-fluid rounded shadow-sm" />
+          </div>
+          {% endfor %}
+        </div>
+
+        <h4 class="mt-4">🏞️ Attractions</h4>
+        <ul class="list-group">
+          {% for place in trip_info.attractions %}
+          <li class="list-group-item">
+            <strong>{{ place.name }}</strong><br />
+            <small>{{ place.address }}</small>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+
+<!-- Sidebar Toggle Script -->
+<script>
+document.getElementById("menu-toggle").addEventListener("click", function () {
+  document.getElementById("wrapper").classList.toggle("toggled");
+});
+</script>
+
+<style>
+  #wrapper {
+    display: flex;
+    width: 100%;
+  }
+
+  #sidebar-wrapper {
+    min-width: 250px;
+    max-width: 250px;
+    transition: all 0.3s ease;
+  }
+
+  #wrapper.toggled #sidebar-wrapper {
+    margin-left: -250px;
+  }
+
+  #page-content-wrapper {
+    flex: 1;
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    transition: 0.2s;
+  }
+
+  ul.list-group-flush li {
+    border: none;
+    padding: 8px 0;
+  }
+</style>
+{% endblock %}
